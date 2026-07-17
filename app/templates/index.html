@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>URL Shortener</title>
+  <style>
+    body { font-family: sans-serif; max-width: 640px; margin: 3rem auto; padding: 0 1rem; }
+    form { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; }
+    input[type="url"] { flex: 1; padding: 0.5rem; font-size: 1rem; }
+    button { padding: 0.5rem 1rem; font-size: 1rem; cursor: pointer; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { text-align: left; padding: 0.5rem; border-bottom: 1px solid #ddd; }
+    .flash { background: #e6ffed; border: 1px solid #34c759; padding: 0.75rem; margin-bottom: 1rem; }
+    a { word-break: break-all; }
+  </style>
+</head>
+<body>
+  <h1>URL Shortener</h1>
+
+  {% if created %}
+  <div class="flash">
+    Created: <a href="{{ request.base_url }}{{ created.short_code }}">{{ request.base_url }}{{ created.short_code }}</a>
+    &rarr; {{ created.original_url }}
+  </div>
+  {% endif %}
+
+  <form method="post" action="/">
+    <input type="url" name="original_url" placeholder="https://example.com/very/long/url" required>
+    <button type="submit">Shorten</button>
+  </form>
+
+  <table>
+    <thead>
+      <tr><th>Short URL</th><th>Original URL</th></tr>
+    </thead>
+    <tbody>
+      {% for url in urls %}
+      <tr>
+        <td><a href="{{ request.base_url }}{{ url.short_code }}">{{ url.short_code }}</a></td>
+        <td><a href="{{ url.original_url }}">{{ url.original_url }}</a></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="2">No URLs yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</body>
+</html>
