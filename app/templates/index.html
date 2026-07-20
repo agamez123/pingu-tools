@@ -3,35 +3,49 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>URL Shortener</title>
+  <title>url shortener</title>
+  <script>
+    if (localStorage.getItem("theme") === "light") {
+      document.documentElement.setAttribute("data-theme", "light");
+    }
+  </script>
   <link rel="stylesheet" href="{{ url_for('static', path='css/style.css') }}">
 </head>
 <body>
-  <div class="page">
-    <div class="brand">
-      <span class="brand-mark">Sh</span>
-      <h1>URL Shortener</h1>
+  {% from "_sidebar.html" import sidebar %}
+  {{ sidebar('shorten') }}
+
+  <button type="button" class="collapse-open-btn" id="sidebar-open" title="Open sidebar" aria-label="Open sidebar">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m13 17 5-5-5-5M6 17l5-5-5-5"/></svg>
+  </button>
+
+  <div class="page" id="page">
+    <div class="brand" id="top">
+      <span class="brand-mark">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+      </span>
+      <h1>url shortener</h1>
     </div>
-    <p class="subtitle">Paste a long URL, get a short one back.</p>
+    <p class="subtitle">paste a long url, get a short one back.</p>
 
     {% if created %}
     <div class="flash">
       <div class="flash-text">
-        <span class="flash-label">Short link created</span>
+        <span class="flash-label">short link created</span>
         <span class="flash-url">{{ request.base_url }}{{ created.short_code }}</span>
       </div>
-      <button type="button" class="copy-btn" data-copy="{{ request.base_url }}{{ created.short_code }}">Copy</button>
+      <button type="button" class="copy-btn" data-copy="{{ request.base_url }}{{ created.short_code }}">copy</button>
     </div>
     {% endif %}
 
     <div class="hero-card">
       <form class="create-form" method="post" action="/">
-        <input type="url" name="original_url" placeholder="https://example.com/very/long/url" required>
-        <button type="submit" class="btn btn-primary">Shorten</button>
+        <input type="url" name="original_url" placeholder="paste the link here" required>
+        <button type="submit" class="btn btn-primary">shorten</button>
       </form>
     </div>
 
-    <p class="section-label">Your links</p>
+    <p class="section-label" id="links">your links</p>
 
     {% if urls %}
     <ul class="url-list">
@@ -44,15 +58,15 @@
 
         <form class="edit-form" method="post" action="/update/{{ url.short_code }}">
           <input type="url" name="original_url" placeholder="{{ url.original_url }}" required>
-          <button type="submit" class="btn btn-primary">Save</button>
-          <button type="button" class="btn btn-icon" data-edit-cancel>Cancel</button>
+          <button type="submit" class="btn btn-primary">save</button>
+          <button type="button" class="btn btn-icon" data-edit-cancel>cancel</button>
         </form>
 
         <div class="url-row-actions">
           <button type="button" class="btn btn-icon" data-edit-toggle title="Edit" aria-label="Edit">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
           </button>
-          <button type="button" class="copy-btn" data-copy="{{ request.base_url }}{{ url.short_code }}" title="Copy short link">Copy</button>
+          <button type="button" class="copy-btn" data-copy="{{ request.base_url }}{{ url.short_code }}" title="Copy short link">copy</button>
           <form method="post" action="/delete/{{ url.short_code }}" style="display:contents">
             <button type="submit" class="btn btn-icon danger-target" data-delete-toggle title="Delete" aria-label="Delete">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6h16Z"/></svg>
@@ -64,8 +78,10 @@
     </ul>
     {% else %}
     <div class="empty-state">
-      <div class="empty-state-icon">&#128279;</div>
-      <p>No links yet. Shorten your first URL above.</p>
+      <div class="empty-state-icon">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+      </div>
+      <p>no links yet. shorten your first url above.</p>
     </div>
     {% endif %}
   </div>

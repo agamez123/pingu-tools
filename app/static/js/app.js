@@ -1,3 +1,55 @@
+(function initSidebar() {
+  const sidebar = document.getElementById("sidebar");
+  const page = document.getElementById("page");
+  const openBtn = document.getElementById("sidebar-open");
+  const toggleBtn = document.getElementById("sidebar-toggle");
+  if (!sidebar || !page || !openBtn || !toggleBtn) return;
+
+  function setCollapsed(collapsed) {
+    sidebar.classList.toggle("collapsed", collapsed);
+    page.classList.toggle("sidebar-collapsed", collapsed);
+    openBtn.classList.toggle("visible", collapsed);
+    localStorage.setItem("sidebar-collapsed", collapsed ? "true" : "false");
+  }
+
+  const stored = localStorage.getItem("sidebar-collapsed");
+  const initialCollapsed = stored === null ? window.innerWidth <= 720 : stored === "true";
+  setCollapsed(initialCollapsed);
+
+  toggleBtn.addEventListener("click", () => setCollapsed(true));
+  openBtn.addEventListener("click", () => setCollapsed(false));
+})();
+
+(function initThemeSwitcher() {
+  const buttons = document.querySelectorAll("[data-theme-option]");
+  if (!buttons.length) return;
+
+  function currentTheme() {
+    return document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark";
+  }
+
+  function applyActive() {
+    const theme = currentTheme();
+    buttons.forEach((btn) => {
+      btn.classList.toggle("active", btn.dataset.themeOption === theme);
+    });
+  }
+
+  buttons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      if (btn.dataset.themeOption === "light") {
+        document.documentElement.setAttribute("data-theme", "light");
+      } else {
+        document.documentElement.removeAttribute("data-theme");
+      }
+      localStorage.setItem("theme", btn.dataset.themeOption);
+      applyActive();
+    });
+  });
+
+  applyActive();
+})();
+
 document.addEventListener("click", (event) => {
   const copyBtn = event.target.closest("[data-copy]");
   if (copyBtn) {
@@ -37,7 +89,7 @@ document.addEventListener("click", (event) => {
       event.preventDefault();
       deleteBtn.dataset.confirming = "true";
       deleteBtn.dataset.originalText = deleteBtn.textContent;
-      deleteBtn.textContent = "Confirm?";
+      deleteBtn.textContent = "confirm?";
       deleteBtn.classList.add("danger");
       resetOtherDeleteButtons(deleteBtn);
     }
@@ -52,7 +104,7 @@ document.addEventListener("click", (event) => {
 function resetOtherDeleteButtons(exceptBtn) {
   document.querySelectorAll('[data-delete-toggle][data-confirming="true"]').forEach((btn) => {
     if (btn !== exceptBtn) {
-      btn.textContent = btn.dataset.originalText || "Delete";
+      btn.textContent = btn.dataset.originalText || "delete";
       btn.dataset.confirming = "false";
       btn.classList.remove("danger");
     }
