@@ -55,6 +55,11 @@ def index(request: Request, created: Optional[str] = None, db: Session = Depends
     )
 
 
+@app.get("/settings")
+def settings_page(request: Request):
+    return templates.TemplateResponse(request, "settings.html", {})
+
+
 @app.post("/")
 def create_short_url_form(original_url: str = Form(...), db: Session = Depends(get_db)):
     url = _create_url(db, original_url)
