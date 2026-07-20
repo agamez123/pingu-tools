@@ -498,6 +498,112 @@ a {
   height: 16px;
 }
 
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 380px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 2rem;
+}
+
+.auth-card .brand {
+  justify-content: center;
+  margin-bottom: 0.5rem;
+}
+
+.auth-card .subtitle {
+  text-align: center;
+  margin-bottom: 1.75rem;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.auth-form input {
+  width: 100%;
+  padding: 0.8rem 1.1rem;
+  font-size: 0.9rem;
+  font-family: inherit;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--input-border);
+  background: transparent;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.auth-form input::placeholder {
+  color: var(--text-muted);
+}
+
+.auth-form input:focus {
+  border-color: var(--text);
+}
+
+.auth-form .btn {
+  width: 100%;
+  margin-top: 0.4rem;
+}
+
+.auth-error {
+  display: none;
+  background: color-mix(in srgb, var(--red) 12%, transparent);
+  border: 1px solid var(--red);
+  color: var(--red);
+  border-radius: var(--radius);
+  padding: 0.65rem 0.9rem;
+  font-size: 0.8rem;
+  margin-bottom: 0.7rem;
+}
+
+.auth-error.visible {
+  display: block;
+}
+
+.auth-footer {
+  text-align: center;
+  margin-top: 1.5rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.auth-footer a {
+  color: var(--text);
+  text-decoration: underline;
+}
+
+.account-info {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  margin: 0 0 1rem;
+}
+
+.account-info strong {
+  color: var(--text);
+  font-weight: 500;
+}
+
+.btn-danger {
+  background: var(--dark-red);
+  color: var(--white);
+}
+
+.btn-danger:hover {
+  background: var(--red);
+}
+
 .empty-state {
   text-align: center;
   padding: 3.5rem 1.5rem;

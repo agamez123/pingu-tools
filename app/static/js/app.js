@@ -50,6 +50,98 @@
   applyActive();
 })();
 
+(function initAuthForms() {
+  function showError(form, message) {
+    const errorEl = form.querySelector(".auth-error");
+    if (!errorEl) return;
+    errorEl.textContent = message;
+    errorEl.classList.add("visible");
+  }
+
+  function setLoading(form, loading) {
+    const btn = form.querySelector("button[type='submit']");
+    if (btn) btn.disabled = loading;
+  }
+
+  const signupForm = document.getElementById("signup-form");
+  if (signupForm) {
+    signupForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      setLoading(signupForm, true);
+      const data = new FormData(signupForm);
+      const email = data.get("email");
+      const password = data.get("password");
+
+      try {
+        const createRes = await fetch("/users", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username: data.get("username"), email, password }),
+        });
+        if (!createRes.ok) {
+          const body = await createRes.json().catch(() => ({}));
+          showError(signupForm, body.detail || "could not create account.");
+          setLoading(signupForm, false);
+          return;
+        }
+
+        const loginRes = await fetch("/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        });
+        if (!loginRes.ok) {
+          window.location.href = "/login";
+          return;
+        }
+        window.location.href = "/";
+      } catch (err) {
+        showError(signupForm, "something went wrong. try again.");
+        setLoading(signupForm, false);
+      }
+    });
+  }
+
+  const loginForm = document.getElementById("login-form");
+  if (loginForm) {
+    loginForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      setLoading(loginForm, true);
+      const data = new FormData(loginForm);
+
+      try {
+        const res = await fetch("/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: data.get("email"), password: data.get("password") }),
+        });
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          showError(loginForm, body.detail || "invalid email or password.");
+          setLoading(loginForm, false);
+          return;
+        }
+        window.location.href = "/";
+      } catch (err) {
+        showError(loginForm, "something went wrong. try again.");
+        setLoading(loginForm, false);
+      }
+    });
+  }
+
+  const logoutBtn = document.getElementById("logout-btn");
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", async () => {
+      logoutBtn.disabled = true;
+      try {
+        await fetch("/logout", { method: "POST" });
+      } finally {
+        window.location.href = "/signup";
+      }
+    });
+  }
+})();
+
 document.addEventListener("click", (event) => {
   const copyBtn = event.target.closest("[data-copy]");
   if (copyBtn) {

@@ -94,13 +94,27 @@ def get_current_user(request: Request, db: Session = Depends(get_db)) -> User:
         raise HTTPException(status_code=401, detail="Not logged in")
     return user
 
+def _get_logged_in_user(request: Request, db: Session) -> Optional[User]:
+    user_id = request.session.get("user_id")
+    if user_id is None:
+        return None
+    user = db.query(User).get(user_id)
+    if user is None:
+        request.session.clear()
+        return None
+    return user
+
+
 @app.get("/")
 def index(
     request: Request,
     created: Optional[str] = None,
-    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    current_user = _get_logged_in_user(request, db)
+    if current_user is None:
+        return RedirectResponse(url="/signup")
+
     urls = (
         db.query(Url)
         .filter(Url.user_id == current_user.id)
@@ -120,8 +134,25 @@ def index(
 
 
 @app.get("/settings")
-def settings_page(request: Request):
-    return templates.TemplateResponse(request, "settings.html", {})
+def settings_page(request: Request, db: Session = Depends(get_db)):
+    current_user = _get_logged_in_user(request, db)
+    if current_user is None:
+        return RedirectResponse(url="/signup")
+    return templates.TemplateResponse(request, "settings.html", {"current_user": current_user})
+
+
+@app.get("/signup")
+def signup_page(request: Request, db: Session = Depends(get_db)):
+    if _get_logged_in_user(request, db) is not None:
+        return RedirectResponse(url="/")
+    return templates.TemplateResponse(request, "signup.html", {})
+
+
+@app.get("/login")
+def login_page(request: Request, db: Session = Depends(get_db)):
+    if _get_logged_in_user(request, db) is not None:
+        return RedirectResponse(url="/")
+    return templates.TemplateResponse(request, "login.html", {})
 
 
 @app.post("/")
@@ -156,11 +187,7 @@ def login_user(payload: UserLoginRequest, request: Request, db: Session = Depend
     return {"message":"Logged in"}
 
 @app.post("/logout", status_code=200)
-def logout_user(
-    request: Request,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
+def logout_user(request: Request):
     request.session.clear()
     return {"message": "Logged out"}
     

@@ -41,6 +41,12 @@
         </button>
       </div>
     </div>
+
+    <div class="hero-card">
+      <p class="section-label">account</p>
+      <p class="account-info">logged in as <strong>{{ current_user.username }}</strong> ({{ current_user.email }})</p>
+      <button type="button" class="btn btn-danger" id="logout-btn">log out</button>
+    </div>
   </div>
 
   <script src="{{ url_for('static', path='js/app.js') }}"></script>
