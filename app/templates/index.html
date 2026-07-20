@@ -2,60 +2,74 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>URL Shortener</title>
-  <style>
-    body { font-family: sans-serif; max-width: 640px; margin: 3rem auto; padding: 0 1rem; }
-    form { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; }
-    input[type="url"] { flex: 1; padding: 0.5rem; font-size: 1rem; }
-    button { padding: 0.5rem 1rem; font-size: 1rem; cursor: pointer; }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { text-align: left; padding: 0.5rem; border-bottom: 1px solid #ddd; }
-    .flash { background: #e6ffed; border: 1px solid #34c759; padding: 0.75rem; margin-bottom: 1rem; }
-    a { word-break: break-all; }
-    .delete-btn { background: none; border: none; color: #c0392b; cursor: pointer; padding: 0; font-size: 0.9rem; }
-    .update-btn { background: none; border: none; color: #249ed6; cursor: pointer; padding: 0; font-size: 0.9rem; }
-  </style>
+  <link rel="stylesheet" href="{{ url_for('static', path='css/style.css') }}">
 </head>
 <body>
-  <h1>URL Shortener</h1>
+  <div class="page">
+    <div class="brand">
+      <span class="brand-mark">Sh</span>
+      <h1>URL Shortener</h1>
+    </div>
+    <p class="subtitle">Paste a long URL, get a short one back.</p>
 
-  {% if created %}
-  <div class="flash">
-    Created: <a href="{{ request.base_url }}{{ created.short_code }}">{{ request.base_url }}{{ created.short_code }}</a>
-    &rarr; {{ created.original_url }}
-  </div>
-  {% endif %}
+    {% if created %}
+    <div class="flash">
+      <div class="flash-text">
+        <span class="flash-label">Short link created</span>
+        <span class="flash-url">{{ request.base_url }}{{ created.short_code }}</span>
+      </div>
+      <button type="button" class="copy-btn" data-copy="{{ request.base_url }}{{ created.short_code }}">Copy</button>
+    </div>
+    {% endif %}
 
-  <form method="post" action="/">
-    <input type="url" name="original_url" placeholder="https://example.com/very/long/url" required>
-    <button type="submit">Shorten</button>
-  </form>
+    <div class="hero-card">
+      <form class="create-form" method="post" action="/">
+        <input type="url" name="original_url" placeholder="https://example.com/very/long/url" required>
+        <button type="submit" class="btn btn-primary">Shorten</button>
+      </form>
+    </div>
 
-  <table>
-    <thead>
-      <tr><th>Short URL</th><th>Original URL</th><th></th></tr>
-    </thead>
-    <tbody>
+    <p class="section-label">Your links</p>
+
+    {% if urls %}
+    <ul class="url-list">
       {% for url in urls %}
-      <tr>
-        <td><a href="{{ request.base_url }}{{ url.short_code }}">{{ url.short_code }}</a></td>
-        <td><a href="{{ url.original_url }}">{{ url.original_url }}</a></td>
-        <td>
-          <form method="post" action="/delete/{{ url.short_code }}" onsubmit="return confirm('Delete this short URL?');">
-            <button type="submit" class="delete-btn">Delete</button>
+      <li class="url-row">
+        <div class="url-row-main">
+          <a class="short-link" href="{{ request.base_url }}{{ url.short_code }}">{{ request.base_url }}{{ url.short_code }}</a>
+          <a class="original-link" href="{{ url.original_url }}" title="{{ url.original_url }}">{{ url.original_url }}</a>
+        </div>
+
+        <form class="edit-form" method="post" action="/update/{{ url.short_code }}">
+          <input type="url" name="original_url" placeholder="{{ url.original_url }}" required>
+          <button type="submit" class="btn btn-primary">Save</button>
+          <button type="button" class="btn btn-icon" data-edit-cancel>Cancel</button>
+        </form>
+
+        <div class="url-row-actions">
+          <button type="button" class="btn btn-icon" data-edit-toggle title="Edit" aria-label="Edit">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+          </button>
+          <button type="button" class="copy-btn" data-copy="{{ request.base_url }}{{ url.short_code }}" title="Copy short link">Copy</button>
+          <form method="post" action="/delete/{{ url.short_code }}" style="display:contents">
+            <button type="submit" class="btn btn-icon danger-target" data-delete-toggle title="Delete" aria-label="Delete">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6h16Z"/></svg>
+            </button>
           </form>
-        </td>
-        <td>
-          <form method="post" action="/update/{{ url.short_code }}">
-            <input name="original_url" placeholder="aabbcc" required>
-            <button type="submit" class="update-btn">Update</button>
-          </form>
-        </td>
-      </tr>
-      {% else %}
-      <tr><td colspan="3">No URLs yet.</td></tr>
+        </div>
+      </li>
       {% endfor %}
-    </tbody>
-  </table>
+    </ul>
+    {% else %}
+    <div class="empty-state">
+      <div class="empty-state-icon">&#128279;</div>
+      <p>No links yet. Shorten your first URL above.</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <script src="{{ url_for('static', path='js/app.js') }}"></script>
 </body>
 </html>
