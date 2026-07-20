@@ -7,3 +7,5 @@ python-dotenv
 pydantic-settings
 jinja2
 python-multipart
+passlib[bcrypt]
+itsdangerous

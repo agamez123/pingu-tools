@@ -8,12 +8,19 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
+import os
+from starlette.middleware.sessions import SessionMiddleware
+from passlib.context import CryptContext
+
 from app.database import get_db
-from app.models import Url
+from app.models import Url, User
 
 app = FastAPI()
+app.add_middleware(SessionMiddleware, secret_key=os.getenv("SECRET_KEY"))
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 templates = Jinja2Templates(directory="app/templates")
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 class UrlCreateRequest(BaseModel):
@@ -27,15 +34,37 @@ class UrlResponse(BaseModel):
     class Config:
         from_attributes = True
 
+class UserResponse(BaseModel):
+    username: str
+    email: str
 
-def _create_url(db: Session, original_url: str) -> Url:
+    class Config:
+        from_attributes = True
+
+class UserCreateRequest(BaseModel):
+    email: str
+    password: str
+    username: str
+
+class UserLoginRequest(BaseModel):
+    email: str
+    password: str
+
+def _create_url(db: Session, original_url: str, user_id: int) -> Url:
     short_code = secrets.token_urlsafe(6)[:8]
-    url = Url(short_code=short_code, original_url=original_url)
+    url = Url(short_code=short_code, original_url=original_url, user_id=user_id)
     db.add(url)
     db.commit()
     db.refresh(url)
     return url
 
+def _create_user(db: Session, email: str, password: str, username: str) -> User:
+    hashed_password = pwd_context.hash(password)
+    user = User(email=email,hashed_password=hashed_password,username=username)
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user
 
 def _get_url_or_404(db: Session, short_code: str) -> Url:
     url = db.query(Url).filter(Url.short_code == short_code).first()
@@ -43,13 +72,48 @@ def _get_url_or_404(db: Session, short_code: str) -> Url:
         raise HTTPException(status_code=404, detail="Short URL not found")
     return url
 
+def _get_owned_url_or_404(db: Session, short_code: str, user_id: int) -> Url:
+    url = (
+        db.query(Url)
+        .filter(Url.short_code == short_code, Url.user_id == user_id)
+        .first()
+    )
+    if url is None:
+        raise HTTPException(status_code=404, detail="Short URL not found")
+    return url
+
+def _get_user_by_email(db: Session, email: str) -> Optional[User]:
+    return db.query(User).filter(User.email == email).first()
+
+def get_current_user(request: Request, db: Session = Depends(get_db)) -> User:
+    user_id = request.session.get("user_id")
+    if user_id is None:
+        raise HTTPException(status_code=401, detail="Not logged in")
+    user = db.query(User).get(user_id)
+    if user is None:
+        raise HTTPException(status_code=401, detail="Not logged in")
+    return user
 
 @app.get("/")
-def index(request: Request, created: Optional[str] = None, db: Session = Depends(get_db)):
-    urls = db.query(Url).order_by(Url.id.desc()).all()
+def index(
+    request: Request,
+    created: Optional[str] = None,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    urls = (
+        db.query(Url)
+        .filter(Url.user_id == current_user.id)
+        .order_by(Url.id.desc())
+        .all()
+    )
     created_url = None
     if created:
-        created_url = db.query(Url).filter(Url.short_code == created).first()
+        created_url = (
+            db.query(Url)
+            .filter(Url.short_code == created, Url.user_id == current_user.id)
+            .first()
+        )
     return templates.TemplateResponse(
         request, "index.html", {"urls": urls, "created": created_url}
     )
@@ -61,25 +125,64 @@ def settings_page(request: Request):
 
 
 @app.post("/")
-def create_short_url_form(original_url: str = Form(...), db: Session = Depends(get_db)):
-    url = _create_url(db, original_url)
+def create_short_url_form(
+    original_url: str = Form(...),
+    current_user: User = Depends(get_current_user), 
+    db: Session = Depends(get_db)):
+    url = _create_url(db, original_url, current_user.id)
     return RedirectResponse(url=f"/?created={url.short_code}", status_code=303)
 
 @app.post("/urls", response_model=UrlResponse)
-def create_short_url(payload: UrlCreateRequest, db: Session = Depends(get_db)):
-    return _create_url(db, payload.original_url)
+def create_short_url(
+    payload: UrlCreateRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)):
+    return _create_url(db, payload.original_url, current_user.id)
 
+@app.post("/users", response_model=UserResponse, status_code=201)
+def create_user(payload: UserCreateRequest, db: Session = Depends(get_db)):
+    if _get_user_by_email(db, payload.email):
+        raise HTTPException(status_code=409, detail="Email already registered")
+    
+    return _create_user(db, payload.email, payload.password, payload.username)
+
+@app.post("/login", status_code=200)
+def login_user(payload: UserLoginRequest, request: Request, db: Session = Depends(get_db)):
+    user = _get_user_by_email(db, payload.email)
+    if user is None or not pwd_context.verify(payload.password, user.hashed_password):
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+
+    request.session["user_id"] = user.id
+    return {"message":"Logged in"}
+
+@app.post("/logout", status_code=200)
+def logout_user(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    request.session.clear()
+    return {"message": "Logged out"}
+    
 
 @app.delete("/urls/{short_code}", status_code=204)
-def delete_url(short_code: str, db: Session = Depends(get_db)):
-    url = _get_url_or_404(db, short_code)
+def delete_url(
+    short_code: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    url = _get_owned_url_or_404(db, short_code, current_user.id)
     db.delete(url)
     db.commit()
 
 
 @app.post("/delete/{short_code}")
-def delete_url_form(short_code: str, db: Session = Depends(get_db)):
-    url = _get_url_or_404(db, short_code)
+def delete_url_form(
+    short_code: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    url = _get_owned_url_or_404(db, short_code, current_user.id)
     db.delete(url)
     db.commit()
     return RedirectResponse(url="/", status_code=303)
@@ -88,17 +191,18 @@ def delete_url_form(short_code: str, db: Session = Depends(get_db)):
 def update_url_form(
     short_code: str,
     original_url: str = Form(...),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    url = _get_url_or_404(db, short_code)
+    url = _get_owned_url_or_404(db, short_code, current_user.id)
     url.original_url = original_url
     db.commit()
     return RedirectResponse(url="/", status_code=303)
-
 
 
 @app.get("/{short_code}")
 def redirect_to_original(short_code: str, db: Session = Depends(get_db)):
     url = _get_url_or_404(db, short_code)
     return RedirectResponse(url.original_url)
+
 
