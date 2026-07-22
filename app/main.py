@@ -22,6 +22,7 @@ templates = Jinja2Templates(directory="app/templates")
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+MAX_URLS_PER_USER = 10
 
 class UrlCreateRequest(BaseModel):
     original_url: str
@@ -51,6 +52,11 @@ class UserLoginRequest(BaseModel):
     password: str
 
 def _create_url(db: Session, original_url: str, user_id: int) -> Url:
+    url_count = db.query(Url).filter(Url.user_id == user_id).count()
+
+    if url_count > MAX_URLS_PER_USER:
+        raise HTTPException(status_code=403, detail="URL LIMIT REACHED")
+
     short_code = secrets.token_urlsafe(6)[:8]
     url = Url(short_code=short_code, original_url=original_url, user_id=user_id)
     db.add(url)
@@ -109,6 +115,7 @@ def _get_logged_in_user(request: Request, db: Session) -> Optional[User]:
 def index(
     request: Request,
     created: Optional[str] = None,
+    error: Optional[str] = None,
     db: Session = Depends(get_db),
 ):
     current_user = _get_logged_in_user(request, db)
@@ -129,7 +136,9 @@ def index(
             .first()
         )
     return templates.TemplateResponse(
-        request, "index.html", {"urls": urls, "created": created_url}
+        request,
+        "index.html",
+        {"urls": urls, "created": created_url, "limit_reached": error == "limit"},
     )
 
 
@@ -158,9 +167,14 @@ def login_page(request: Request, db: Session = Depends(get_db)):
 @app.post("/")
 def create_short_url_form(
     original_url: str = Form(...),
-    current_user: User = Depends(get_current_user), 
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)):
-    url = _create_url(db, original_url, current_user.id)
+    try:
+        url = _create_url(db, original_url, current_user.id)
+    except HTTPException as exc:
+        if exc.status_code == 403:
+            return RedirectResponse(url="/?error=limit", status_code=303)
+        raise
     return RedirectResponse(url=f"/?created={url.short_code}", status_code=303)
 
 @app.post("/urls", response_model=UrlResponse)
@@ -213,6 +227,16 @@ def delete_url_form(
     db.delete(url)
     db.commit()
     return RedirectResponse(url="/", status_code=303)
+
+@app.post("/delete-all")
+def delete_all_urls_form(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    db.query(Url).filter(Url.user_id == current_user.id).delete()
+    db.commit()
+    return RedirectResponse(url="/", status_code=303)
+
 
 @app.post("/update/{short_code}")
 def update_url_form(

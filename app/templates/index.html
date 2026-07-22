@@ -28,7 +28,14 @@
     </div>
     <p class="subtitle">paste a long url, get a short one back.</p>
 
-    {% if created %}
+    {% if limit_reached %}
+    <div class="flash flash-error">
+      <div class="flash-text">
+        <span class="flash-label">url limit reached</span>
+        <span class="flash-url">delete a link before creating a new one.</span>
+      </div>
+    </div>
+    {% elif created %}
     <div class="flash">
       <div class="flash-text">
         <span class="flash-label">short link created</span>
@@ -45,7 +52,14 @@
       </form>
     </div>
 
-    <p class="section-label" id="links">your links</p>
+    <div class="section-header">
+      <p class="section-label" id="links">your links</p>
+      {% if urls %}
+      <form method="post" action="/delete-all">
+        <button type="submit" class="delete-all-btn" data-delete-toggle title="Delete all" aria-label="Delete all">delete all</button>
+      </form>
+      {% endif %}
+    </div>
 
     {% if urls %}
     <ul class="url-list">

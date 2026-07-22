@@ -303,6 +303,27 @@ a {
   border-radius: var(--radius-pill);
 }
 
+.delete-all-btn {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.delete-all-btn:hover {
+  color: var(--text);
+}
+
+.delete-all-btn.danger,
+.delete-all-btn.danger:hover {
+  color: var(--red);
+}
+
 .flash {
   display: flex;
   align-items: center;
@@ -333,6 +354,14 @@ a {
   word-break: break-all;
 }
 
+.flash-error {
+  border-color: var(--red) !important;
+}
+
+.flash-error .flash-label {
+  color: var(--red) !important;
+}
+
 .copy-btn {
   flex-shrink: 0;
   background: var(--elevated);
@@ -355,10 +384,17 @@ a {
   border-color: var(--green);
 }
 
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 0 0.75rem 0;
+}
+
 .section-label {
   color: var(--text-muted);
   font-size: 0.75rem;
-  margin: 0 0 0.75rem 0.1rem;
+  margin: 0 0 0 0.1rem;
 }
 
 .url-list {
