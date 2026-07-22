@@ -397,6 +397,10 @@ a {
   margin: 0 0 0 0.1rem;
 }
 
+.url-count {
+  opacity: 0.6;
+}
+
 .url-list {
   display: flex;
   flex-direction: column;

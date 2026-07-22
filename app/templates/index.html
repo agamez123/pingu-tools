@@ -54,7 +54,7 @@
     </div>
 
     <div class="section-header">
-      <p class="section-label" id="links">your links</p>
+      <p class="section-label" id="links">your links <span class="url-count">{{ url_count }}/{{ max_urls }}</span></p>
       {% if urls %}
       <form method="post" action="/delete-all">
         <button type="submit" class="delete-all-btn" data-delete-toggle title="Delete all" aria-label="Delete all">delete all</button>

@@ -22,7 +22,7 @@ templates = Jinja2Templates(directory="app/templates")
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-MAX_URLS_PER_USER = 10
+MAX_URLS_PER_USER = 30
 
 class UrlCreateRequest(BaseModel):
     original_url: str
@@ -54,7 +54,7 @@ class UserLoginRequest(BaseModel):
 def _create_url(db: Session, original_url: str, user_id: int) -> Url:
     url_count = db.query(Url).filter(Url.user_id == user_id).count()
 
-    if url_count > MAX_URLS_PER_USER:
+    if url_count >= MAX_URLS_PER_USER:
         raise HTTPException(status_code=403, detail="URL LIMIT REACHED")
 
     short_code = secrets.token_urlsafe(6)[:8]
@@ -138,7 +138,13 @@ def index(
     return templates.TemplateResponse(
         request,
         "index.html",
-        {"urls": urls, "created": created_url, "limit_reached": error == "limit"},
+        {
+            "urls": urls,
+            "created": created_url,
+            "limit_reached": error == "limit",
+            "url_count": len(urls),
+            "max_urls": MAX_URLS_PER_USER,
+        },
     )
 
 

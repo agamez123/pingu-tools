@@ -1,3 +1,6 @@
+from app.main import MAX_URLS_PER_USER
+
+
 def signup_and_login(client, email="user@test.com", password="pw123456", username="user"):
     client.post("/users", json={"email": email, "password": password, "username": username})
     client.post("/login", json={"email": email, "password": password})
@@ -63,12 +66,27 @@ def test_delete_url(client):
 
 def test_url_limit_is_enforced(client):
     signup_and_login(client)
-    for _ in range(11):
-        client.post("/urls", json={"original_url": "https://example.com"})
+    for _ in range(MAX_URLS_PER_USER):
+        resp = client.post("/urls", json={"original_url": "https://example.com"})
+        assert resp.status_code == 200
 
     resp = client.post("/urls", json={"original_url": "https://example.com"})
 
     assert resp.status_code == 403
+
+
+def test_delete_all_urls(client):
+    signup_and_login(client)
+    codes = [
+        client.post("/urls", json={"original_url": "https://example.com"}).json()["short_code"]
+        for _ in range(3)
+    ]
+
+    resp = client.post("/delete-all", follow_redirects=False)
+
+    assert resp.status_code == 303
+    for code in codes:
+        assert client.get(f"/{code}").status_code == 404
 
 
 def test_user_cannot_delete_another_users_url(client):

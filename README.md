@@ -1,3 +1,5 @@
+<img src="app/static/favicon.svg" width="32" height="32" align="left" alt="Pingu Tools logo">
+
 # Pingu Tools
 
 Pingu Tools is a small, growing toolbox of self-hosted web utilities, built with FastAPI. The first tool is a **URL shortener** with per-user accounts — sign up, shorten links, and manage them from a dashboard. More tools are planned; see [`TODO.md`](TODO.md) for what's next.
