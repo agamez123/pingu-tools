@@ -83,3 +83,14 @@ pytest
 ```
 
 CI runs this same suite automatically on every push and pull request to `master` (see `.github/workflows/ci.yml`).
+
+## Deployment
+
+The app deploys to [Render](https://render.com) via the included `render.yaml` Blueprint, which provisions both the web service (built from the `Dockerfile`) and a managed Postgres database, and wires the connection details between them automatically.
+
+1. Push this repo to GitHub.
+2. In the Render dashboard, choose **New +** → **Blueprint**, and connect the repo.
+3. Render reads `render.yaml` and creates the `pingu-tools` web service and `pingu-tools-db` database. `SECRET_KEY` is auto-generated; no manual secrets setup needed.
+4. Once deployed, the service auto-deploys on every push to `master` — migrations run automatically on container start (see the `Dockerfile` `CMD`).
+
+**Free tier caveats:** the free web service spins down after 15 minutes of inactivity (30-60s cold start on the next request), and the free Postgres database is auto-deleted 30 days after creation. Fine for getting a live URL up to test the deploy, but to keep it running long-term, upgrade the `plan` field for `pingu-tools-db` (and optionally `pingu-tools`) in `render.yaml` or directly in the Render dashboard before the 30-day mark.

@@ -1,0 +1,32 @@
+services:
+  - type: web
+    name: pingu-tools
+    runtime: docker
+    plan: free
+    envVars:
+      - key: POSTGRES_USER
+        fromDatabase:
+          name: pingu-tools-db
+          property: user
+      - key: POSTGRES_PASSWORD
+        fromDatabase:
+          name: pingu-tools-db
+          property: password
+      - key: POSTGRES_HOST
+        fromDatabase:
+          name: pingu-tools-db
+          property: host
+      - key: POSTGRES_PORT
+        fromDatabase:
+          name: pingu-tools-db
+          property: port
+      - key: POSTGRES_DB
+        fromDatabase:
+          name: pingu-tools-db
+          property: database
+      - key: SECRET_KEY
+        generateValue: true
+
+databases:
+  - name: pingu-tools-db
+    plan: free
