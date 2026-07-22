@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>settings — url shortener</title>
+  <title>settings — Pingu</title>
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', path='favicon.svg') }}">
   <script>
     if (localStorage.getItem("theme") === "light") {
       document.documentElement.setAttribute("data-theme", "light");
@@ -26,7 +27,7 @@
       </span>
       <h1>settings</h1>
     </div>
-    <p class="subtitle">customize how url shortener looks.</p>
+    <p class="subtitle">customize how Pingu looks.</p>
 
     <div class="hero-card">
       <p class="section-label">appearance</p>
