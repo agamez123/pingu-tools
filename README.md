@@ -1,18 +1,18 @@
 # Pingu Tools <img src="app/static/favicon.svg" width="32" height="32" align="left" alt="Pingu Tools logo">
 
-Pingu Tools is a small, growing toolbox of self-hosted web utilities, built with FastAPI. The first tool is a **URL shortener** with per-user accounts — sign up, shorten links, and manage them from a dashboard. More tools are planned; see [`TODO.md`](TODO.md) for what's next.
+Pingu Tools is a small set of self-hosted web utilities built with FastAPI. So far there's one tool, a URL shortener with user accounts. You sign up, shorten links, and manage them from a dashboard. [`TODO.md`](TODO.md) lists what's planned next.
 
 ## Current features
 
-- URL shortener — create, edit, and delete short links
-- Per-user accounts — session-cookie auth with bcrypt-hashed passwords; links are scoped and ownership-checked per user
-- Per-user link limit
+- Create, edit, and delete short links.
+- User accounts with session-cookie auth and bcrypt-hashed passwords. Each user sees only their own links, and the server checks ownership before any edit or delete.
+- Each user can keep up to 30 links. Change `MAX_URLS_PER_USER` in `app/main.py` to raise it.
 
 ## Tech stack
 
 - [FastAPI](https://fastapi.tiangolo.com/) + [Jinja2](https://jinja.palletsprojects.com/) templates
 - [SQLAlchemy](https://www.sqlalchemy.org/) + [Alembic](https://alembic.sqlalchemy.org/) migrations
-- PostgreSQL (via Docker)
+- PostgreSQL, run locally in Docker
 - [pytest](https://docs.pytest.org/) for tests
 
 ## Development setup
@@ -20,7 +20,7 @@ Pingu Tools is a small, growing toolbox of self-hosted web utilities, built with
 ### Prerequisites
 
 - Python 3.9+
-- Docker (for the Postgres database)
+- Docker, for the Postgres database
 
 ### 1. Clone and create a virtual environment
 
@@ -44,7 +44,7 @@ pip install -r requirements.txt
 cp .env.example .env
 ```
 
-Edit `.env` and set a real `SECRET_KEY` (used to sign session cookies). The Postgres values can be left as-is for local development.
+Open `.env` and set `SECRET_KEY` to a real value. The app signs session cookies with it. You can leave the Postgres values alone for local development.
 
 ### 4. Start Postgres
 
@@ -64,11 +64,11 @@ alembic upgrade head
 uvicorn app.main:app --reload
 ```
 
-The app will be running at [http://localhost:8000](http://localhost:8000).
+Open [http://localhost:8000](http://localhost:8000).
 
 ## Running tests
 
-Tests run against a separate `url_shortener_test` database on the same Postgres instance, so they never touch your dev data. Create it once:
+The tests use a separate `url_shortener_test` database on the same Postgres instance, so your dev data stays untouched. Create it once:
 
 ```bash
 docker exec url-shortener-postgres psql -U postgres -c "CREATE DATABASE url_shortener_test;"
@@ -80,15 +80,15 @@ Then run the suite:
 pytest
 ```
 
-CI runs this same suite automatically on every push and pull request to `master` (see `.github/workflows/ci.yml`).
+CI runs the same suite on every push and pull request to `master`. The workflow lives in `.github/workflows/ci.yml`.
 
 ## Deployment
 
-The app deploys to [Render](https://render.com) via the included `render.yaml` Blueprint, which provisions both the web service (built from the `Dockerfile`) and a managed Postgres database, and wires the connection details between them automatically.
+The app deploys to [Render](https://render.com) through the `render.yaml` Blueprint. Render builds the web service from the `Dockerfile`, creates a Postgres database, and passes the database credentials to the web service as environment variables.
 
 1. Push this repo to GitHub.
-2. In the Render dashboard, choose **New +** → **Blueprint**, and connect the repo.
-3. Render reads `render.yaml` and creates the `pingu-tools` web service and `pingu-tools-db` database. `SECRET_KEY` is auto-generated; no manual secrets setup needed.
-4. Once deployed, the service auto-deploys on every push to `master` — migrations run automatically on container start (see the `Dockerfile` `CMD`).
+2. In the Render dashboard, choose **New +** → **Blueprint** and connect the repo.
+3. Render reads `render.yaml` and creates the `pingu-tools` web service and the `pingu-tools-db` database. It also generates `SECRET_KEY`, so you don't have to set any secrets by hand.
+4. After the first deploy, every push to `master` triggers a new one. The container runs `alembic upgrade head` before starting uvicorn, so migrations apply on each deploy.
 
-**Free tier caveats:** the free web service spins down after 15 minutes of inactivity (30-60s cold start on the next request), and the free Postgres database is auto-deleted 30 days after creation. Fine for getting a live URL up to test the deploy, but to keep it running long-term, upgrade the `plan` field for `pingu-tools-db` (and optionally `pingu-tools`) in `render.yaml` or directly in the Render dashboard before the 30-day mark.
+Both services are on Render's free plan, which has two catches. The web service sleeps after 15 minutes without traffic, and the next request takes 30 to 60 seconds to wake it. Worse, Render deletes the free Postgres database 30 days after you create it. That's fine for testing a deploy. If you want to keep your data, change `plan` for `pingu-tools-db` in `render.yaml` or the Render dashboard before day 30. You can upgrade `pingu-tools` too if the cold starts bother you.
